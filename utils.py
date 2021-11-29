@@ -2,7 +2,6 @@ import gym
 from ray.rllib import MultiAgentEnv
 import soccer_twos
 
-
 class RLLibWrapper(gym.core.Wrapper, MultiAgentEnv):
     """
     A RLLib wrapper so our env can inherit from MultiAgentEnv.

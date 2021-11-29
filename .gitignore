@@ -1,6 +1,10 @@
 envs/
 ray_results/
 ceia_baseline_agent/
+*.ipynb
+*/ray_results/
+*.zip
+muzero-general/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

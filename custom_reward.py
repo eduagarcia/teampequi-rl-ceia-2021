@@ -19,7 +19,7 @@ class CustomRewardWrapper(gym.core.Wrapper):
         super(CustomRewardWrapper, self).__init__(env)
         self.env = env
         self.goals = [[16.5, 0], [-16.5, 0]]
-        self.step_counter=0 
+        self.step_counter = 0 
 
     def step(self, action):
         obs, rewards, done, info = self.env.step(action)
@@ -32,8 +32,7 @@ class CustomRewardWrapper(gym.core.Wrapper):
             done,
             info,
         )
-        
-
+    
     def reset(self):
         return self.env.reset()
 
@@ -60,6 +59,5 @@ class CustomRewardWrapper(gym.core.Wrapper):
             for agent_id in [team_id*2, (team_id*2)+1]:
                 new_rewards[agent_id] += reward
 
-        print(new_rewards, self.step_counter)
         return new_rewards
 

@@ -11,7 +11,7 @@ import numpy as np
 import os
 import uuid
 
-from utils import create_rllib_env
+from utils import create_custom_reward_rllib_env
 
 #based on https://github.com/ray-project/ray/issues/6669
 class PrioritizedSelfPlay(DefaultCallbacks):
@@ -108,8 +108,8 @@ NUM_ENVS_PER_WORKER = 3
 if __name__ == "__main__":
     ray.init()
 
-    tune.registry.register_env("Soccer", create_rllib_env)
-    temp_env = create_rllib_env({"variation": EnvType.multiagent_player})
+    tune.registry.register_env("Soccer", create_custom_reward_rllib_env)
+    temp_env = create_custom_reward_rllib_env({"variation": EnvType.multiagent_player})
     obs_space = temp_env.observation_space
     act_space = temp_env.action_space
     temp_env.close()

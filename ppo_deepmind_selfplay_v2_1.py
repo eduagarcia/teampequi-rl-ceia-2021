@@ -69,6 +69,7 @@ class PrioritizedSelfPlay(DefaultCallbacks):
         trainer.set_weights({'current_team': trainer.get_weights(['current_team'])['current_team'],
                             'opponent_team': opponent_weights,
                             })
+        trainer.workers.sync_weights()
 
 # based on https://github.com/ray-project/ray/issues/7023
 #Select a random team (blue or yellow) to give the current_policy or opponent_policy

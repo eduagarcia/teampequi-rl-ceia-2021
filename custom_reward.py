@@ -42,7 +42,7 @@ class CustomRewardWrapper(gym.core.Wrapper):
         
         if abs(list(rewards.values())[0]) > 0:
             for agent_id, reward in rewards.items():    
-                new_rewards[agent_id] = reward*100*(1-self.step_counter/5000)
+                new_rewards[agent_id] = reward*20*(1-self.step_counter/5000)
             return new_rewards
 
         ball = info[agent_ids[0]]['ball_info']
@@ -52,12 +52,14 @@ class CustomRewardWrapper(gym.core.Wrapper):
             opponent_goal = self.goals[team_id]
             vector_ball_to_goal = [opponent_goal[0] - ball['position'][0], opponent_goal[1] - ball['position'][1]]
             ball_velocity_norm = np.linalg.norm(ball['velocity'])
-            if ball_velocity_norm > 1e-3:
-                normalized_angle = (math.pi/2 - angle_vector(vector_ball_to_goal, ball['velocity']))/(math.pi/2)
-                reward += normalized_angle*ball_velocity_norm/40
+            if ball_velocity_norm > 1e-3 and not np.isnan(ball_velocity_norm):
+                angle = angle_vector(vector_ball_to_goal, ball['velocity'])
+                if not np.isnan(angle):
+                    normalized_angle = (math.pi/2 - angle)/(math.pi/2)
+                    reward += normalized_angle*ball_velocity_norm/40
             
             for agent_id in [team_id*2, (team_id*2)+1]:
                 new_rewards[agent_id] += reward
-
+        #print(new_rewards)
         return new_rewards
 

@@ -83,6 +83,9 @@ class MatchMaker:
         self.i = 0
 
     def policy_mapping_fn(self, agent_id):
+        if self.i == 0:
+            self.team_select = np.random.choice([0, 1]) #choose a random team
+        
         self.i += 1
 
         if self.i <= self.n_agents // 2:
@@ -96,7 +99,6 @@ class MatchMaker:
 
         #prepare next iteration
         if self.i == self.n_agents:
-            self.team_select = np.random.choice([0, 1]) #choose a random team
             #self.uuid = uuid.uuid4() #for debug
             self.i = 0
               
@@ -123,7 +125,7 @@ if __name__ == "__main__":
 
     analysis = tune.run(
         "PPO",
-        name="PPO_deepmind_selfplay_v2_1",
+        name="PPO_deepmind_selfplay_v2_3",
         config={
             "num_gpus": 1,
             "num_workers": 4,
@@ -162,7 +164,7 @@ if __name__ == "__main__":
         checkpoint_freq=100,
         checkpoint_at_end=True,
         local_dir="./ray_results",
-        # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_ID/checkpoint_00X/checkpoint-X",
+        #restore="./ray_results/PPO_selfplay_1/PPO_Soccer_ID/checkpoint_00X/checkpoint-X",
     )
 
     # Gets best trial based on max accuracy across all training iterations.

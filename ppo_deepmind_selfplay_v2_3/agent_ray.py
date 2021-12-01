@@ -13,7 +13,7 @@ from soccer_twos import AgentInterface
 
 
 ALGORITHM = "PPO"
-CHECKPOINT_PATH = "./ray_results/PPO_deepmind_selfplay_v2_1/PPO_Soccer_8853e_00000_0_2021-11-29_12-10-48/checkpoint_001877/checkpoint-1877"
+CHECKPOINT_PATH = "./ray_results/PPO_deepmind_selfplay_v2_3/PPO_Soccer_7eed3_00000_0_2021-12-01_03-18-27/checkpoint_000300/checkpoint-300"
 POLICY_NAME = "current_team"  # this may be useful when training with selfplay
 
 

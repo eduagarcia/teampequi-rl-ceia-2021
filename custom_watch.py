@@ -29,6 +29,9 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--agent-module", help="Selfplay Agent Module")
     parser.add_argument("-m1", "--agent1-module", help="Team 1 Agent Module")
     parser.add_argument("-m2", "--agent2-module", help="Team 2 Agent Module")
+    parser.add_argument("-c", "--checkpoint", help="Checkpoint Number")
+    parser.add_argument("-c1", "--checkpoint-1", help="Checkpoint Number for Agent 1")
+    parser.add_argument("-c2", "--checkpoint-2", help="Checkpoint Number for Agent 2")
     parser.add_argument("-p", "--base-port", type=int, help="Base Communication Port")
     args = parser.parse_args()
 
@@ -42,15 +45,33 @@ if __name__ == "__main__":
         parser.print_help(sys.stderr)
         raise ValueError("Must specify selfplay (-m) or team (-m1, -m2) agent modules")
 
+    if args.checkpoint:
+        checkpoint_1 = args.checkpoint
+        checkpoint_2 = args.checkpoint
+    elif args.checkpoint_1 and args.checkpoint_2:
+        checkpoint_1 = args.checkpoint_1
+        checkpoint_2 = args.checkpoint_2
+    else:
+        checkpoint_1 = "latest"
+        checkpoint_2 = "latest"
+
     # import agent modules
-    logging.info(f"Loading {agent1_module_name} as blue team")
+    logging.info(f"Loading {agent1_module_name}-{checkpoint_1} as blue team")
+    logging.info(f"Loading {agent2_module_name}-{checkpoint_2} as orange team")
     agent1_module = importlib.import_module(agent1_module_name)
-    logging.info(f"Loading {agent2_module_name} as orange team")
     agent2_module = importlib.import_module(agent2_module_name)
     # instantiate env so agents can access e.g. env.action_space.shape
     env = soccer_twos.make(base_port=args.base_port)
-    agent1 = get_agent_class(agent1_module)(env)
-    agent2 = get_agent_class(agent2_module)(env)
+
+    if checkpoint_1 == 'latest':
+        agent1 = get_agent_class(agent1_module)(env)
+    else:
+        agent1 = get_agent_class(agent1_module)(env, checkpoint_1)
+    if checkpoint_2  == 'latest':
+        agent2 = get_agent_class(agent2_module)(env)
+    else:
+        agent2 = get_agent_class(agent2_module)(env, checkpoint_2)
+        
     env.close()
     # setup & run
     #logging.info(f"{agent1_module_name} name is {agent1.name}")

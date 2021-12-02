@@ -13,10 +13,9 @@ from soccer_twos import AgentInterface
 
 
 ALGORITHM = "PPO"
-CHECKPOINT_PATH = "./ray_results/PPO_deepmind_selfplay_v2_1/PPO_Soccer_8853e_00000_0_2021-11-29_12-10-48/checkpoint_001877/checkpoint-1877"
-POLICY_NAME = "current_team"  # this may be useful when training with selfplay
-#dir_path = os.path.dirname(os.path.realpath(__file__))
-#CHECKPOINT_PATH = os.path.join(dir_path, CHECKPOINT_PATH)
+CHECKPOINT_PATH = "./ray_results/PPO_selfplay_1_custom_reward/PPO_Soccer_7c503_00000_0_2021-12-01_14-02-37/checkpoint_000100/checkpoint-100"
+POLICY_NAME = "default"  # this may be useful when training with selfplay
+
 
 class RayAgent(AgentInterface):
     """
@@ -29,7 +28,6 @@ class RayAgent(AgentInterface):
             env: the competition environment.
         """
         super().__init__()
-        self.name = "GoiabaV2"
         ray.init(ignore_reinit_error=True)
 
         checkpoints = self._get_checkpoints()

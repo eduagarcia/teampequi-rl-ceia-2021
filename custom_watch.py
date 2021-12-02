@@ -4,6 +4,7 @@ import inspect
 import logging
 import os
 import sys
+import traceback
 
 import soccer_twos
 from soccer_twos.agent_interface import AgentInterface
@@ -52,59 +53,65 @@ if __name__ == "__main__":
         checkpoint_1 = args.checkpoint_1
         checkpoint_2 = args.checkpoint_2
     else:
-        checkpoint_1 = "latest"
-        checkpoint_2 = "latest"
+        checkpoint_1 = "default"
+        checkpoint_2 = "default"
 
     # import agent modules
     logging.info(f"Loading {agent1_module_name}-{checkpoint_1} as blue team")
     logging.info(f"Loading {agent2_module_name}-{checkpoint_2} as orange team")
-    agent1_module = importlib.import_module(agent1_module_name)
-    agent2_module = importlib.import_module(agent2_module_name)
-    # instantiate env so agents can access e.g. env.action_space.shape
-    env = soccer_twos.make(base_port=args.base_port)
+    env = None
+    try:
+        agent1_module = importlib.import_module(agent1_module_name)
+        agent2_module = importlib.import_module(agent2_module_name)
+        # instantiate env so agents can access e.g. env.action_space.shape
+        env = soccer_twos.make(base_port=args.base_port)
 
-    if checkpoint_1 == 'latest':
-        agent1 = get_agent_class(agent1_module)(env)
-    else:
-        agent1 = get_agent_class(agent1_module)(env, checkpoint_1)
-    if checkpoint_2  == 'latest':
-        agent2 = get_agent_class(agent2_module)(env)
-    else:
-        agent2 = get_agent_class(agent2_module)(env, checkpoint_2)
-        
-    env.close()
-    # setup & run
-    #logging.info(f"{agent1_module_name} name is {agent1.name}")
-    #logging.info(f"{agent2_module_name} name is {agent2.name}")
-    env = soccer_twos.make(
-        watch=True,
-        base_port=args.base_port,
-        #blue_team_name=agent1.name,
-        #orange_team_name=agent2.name,
-    )
-    env = CustomRewardWrapper(env)
-    obs = env.reset()
-    team0_reward = 0
-    team1_reward = 0
-    while True:
-        # use agent1 as controller for team 0 and vice versa
-        agent1_actions = agent1.act({0: obs[0], 1: obs[1]})
-        agent2_actions = agent2.act({0: obs[2], 1: obs[3]})
-        actions = {
-            0: agent1_actions[0],
-            1: agent1_actions[1],
-            2: agent2_actions[0],
-            3: agent2_actions[1],
-        }
+        if checkpoint_1 == 'default':
+            agent1 = get_agent_class(agent1_module)(env)
+        else:
+            agent1 = get_agent_class(agent1_module)(env, checkpoint_1)
+        if checkpoint_2  == 'default':
+            agent2 = get_agent_class(agent2_module)(env)
+        else:
+            agent2 = get_agent_class(agent2_module)(env, checkpoint_2)
 
-        # step
-        obs, reward, done, info = env.step(actions)
+        env.close()
+        # setup & run
+        #logging.info(f"{agent1_module_name} name is {agent1.name}")
+        #logging.info(f"{agent2_module_name} name is {agent2.name}")
+        env = soccer_twos.make(
+            watch=True,
+            base_port=args.base_port,
+            #blue_team_name=agent1.name,
+            #orange_team_name=agent2.name,
+        )
+        env = CustomRewardWrapper(env)
+        obs = env.reset()
+        team0_reward = 0
+        team1_reward = 0
+        while True:
+            # use agent1 as controller for team 0 and vice versa
+            agent1_actions = agent1.act({0: obs[0], 1: obs[1]})
+            agent2_actions = agent2.act({0: obs[2], 1: obs[3]})
+            actions = {
+                0: agent1_actions[0],
+                1: agent1_actions[1],
+                2: agent2_actions[0],
+                3: agent2_actions[1],
+            }
 
-        # logging
-        team0_reward += reward[0] + reward[1]
-        team1_reward += reward[2] + reward[3]
-        if max(done.values()):  # if any agent is done
-            logging.info(f"Total Reward: {team0_reward} x {team1_reward}")
-            team0_reward = 0
-            team1_reward = 0
-            env.reset()
+            # step
+            obs, reward, done, info = env.step(actions)
+
+            # logging
+            team0_reward += reward[0] + reward[1]
+            team1_reward += reward[2] + reward[3]
+            if max(done.values()):  # if any agent is done
+                logging.info(f"Total Reward: {team0_reward} x {team1_reward}")
+                team0_reward = 0
+                team1_reward = 0
+                env.reset()
+    except (Exception, KeyboardInterrupt) as e:
+        if env is not None:
+            env.close()
+        traceback.print_exc()

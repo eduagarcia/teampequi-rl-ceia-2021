@@ -51,3 +51,11 @@ def create_rllib_env(env_config: dict = {}):
         # is multiagent by default, is only disabled if explicitly set to False
         return env
     return RLLibWrapper(env)
+
+def create_grouped_rllib_env(env_config: dict = {}):
+    env = create_rllib_env(env_config=env_config)
+    env = env.with_agent_groups({
+        'blue_team': [0, 1],
+        'yellow_team': [2, 3]
+    })
+    return env

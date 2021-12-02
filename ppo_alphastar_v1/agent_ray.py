@@ -13,8 +13,8 @@ from soccer_twos import AgentInterface
 
 
 ALGORITHM = "PPO"
-CHECKPOINT_PATH = "./ray_results/PPO_deepmind_selfplay_v2_1/PPO_Soccer_8853e_00000_0_2021-11-29_12-10-48/checkpoint_001877/checkpoint-1877"
-POLICY_NAME = "current_team"  # this may be useful when training with selfplay
+CHECKPOINT_PATH = "./ray_results/PPO_alphastar_v1/PPO_Soccer_f2af6_00000_0_2021-12-02_03-34-49/checkpoint_002800/checkpoint-2800"
+POLICY_NAME = "main_agent_0"  # this may be useful when training with selfplay
 #dir_path = os.path.dirname(os.path.realpath(__file__))
 #CHECKPOINT_PATH = os.path.join(dir_path, CHECKPOINT_PATH)
 
@@ -73,9 +73,20 @@ class RayAgent(AgentInterface):
         cls = get_trainable_cls(ALGORITHM)
         agent = cls(env=config["env"], config=config)
         # load state from checkpoint
-        agent.restore(checkpoint_path)
+        local_save = os.path.join(os.path.dirname(checkpoint_path), os.path.basename(checkpoint_path)+'_weights')
+        if ray.__version__ == '1.8.0':
+            agent.restore(checkpoint_path)
+            self.policy = agent.get_policy(POLICY_NAME)
+            with open(local_save, 'wb') as f:
+                pickle.dump(self.policy.get_weights(), f)
+            print(self.policy.get_weights())
+        else:
+            with open(local_save, 'rb') as f:
+                weights = pickle.load(f)
+                self.policy = agent.get_policy(POLICY_NAME)
+                self.policy.set_weights(weights)
         # get policy for evaluation
-        self.policy = agent.get_policy(POLICY_NAME)
+        
 
     def act(self, observation: Dict[int, np.ndarray]) -> Dict[int, np.ndarray]:
         """The act method is called when the agent is asked to act.
@@ -105,3 +116,8 @@ class RayAgent(AgentInterface):
                 checkpoint_path = os.path.join(chepoints_dir, folder, f'checkpoint-{checkpoint}')
                 checkpoints[checkpoint] = checkpoint_path
         return checkpoints
+
+if __name__ == "__main__":
+    import sys
+    checkpoint = sys.argv[-1]
+    RayAgent(None, checkpoint)

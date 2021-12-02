@@ -4,7 +4,7 @@ from ray import tune
 from ray.rllib.agents.callbacks import DefaultCallbacks, MultiCallbacks
 from soccer_twos import EnvType
 
-from ray.rllib.policy import Policy
+from ray.rllib.policy import Policy, PolicySpec, RandomPolicy
 from ray.rllib.policy.sample_batch import SampleBatch
 
 import numpy as np

@@ -16,14 +16,14 @@ import soccer_twos
 from soccer_twos.agent_interface import AgentInterface
 from evaluate import collect_episodes, summarize_episodes, get_agent_class
 
-def load_agent(agent_module_name: str, checkpoint: str = 'latest', base_port = None) -> AgentInterface:
+def load_agent(agent_module_name: str, checkpoint: str = 'default', base_port = None) -> AgentInterface:
     """Loads a AgentInterface based on his module name"""
 
     agent_module = importlib.import_module(agent_module_name)
 
     env = soccer_twos.make(base_port=base_port)
 
-    if checkpoint == 'latest':
+    if checkpoint == 'default':
         agent = get_agent_class(agent_module)(env)
     else:
         agent = get_agent_class(agent_module)(env, checkpoint)
@@ -36,8 +36,8 @@ def load_agent(agent_module_name: str, checkpoint: str = 'latest', base_port = N
 def evaluate(
     agent1_module_name: str,
     agent2_module_name: str = None,
-    agent1_checkpoint: str = 'latest',
-    agent2_checkpoint: str = 'latest',
+    agent1_checkpoint: str = 'default',
+    agent2_checkpoint: str = 'default',
     n_episodes: int = 200,
     base_port = None
 ) -> Dict:
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         checkpoint_1 = args.checkpoint_1
         checkpoint_2 = args.checkpoint_2
     else:
-        checkpoint_1 = "latest"
-        checkpoint_2 = "latest"
+        checkpoint_1 = "default"
+        checkpoint_2 = "default"
 
     # import agent modules
     logging.info(f"Loading {agent1_module_name}-{checkpoint_1}")

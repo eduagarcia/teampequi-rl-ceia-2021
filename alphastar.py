@@ -3,6 +3,8 @@
 import numpy as np
 import collections
 
+STEPS_UNTIL_CHECKPOINT = 100
+
 
 # The code for the algorithm of pfsp, priority fictitious self-play
 # https://github.com/liuruoze/mini-AlphaStar/blob/8c18233cf6e68abb581292c36f4059d7d950fc69/alphastarmini/core/ma/pfsp.py
@@ -20,6 +22,8 @@ def pfsp(win_rates, weighting="linear"):
         return np.ones_like(win_rates) / len(win_rates)
     return probs / norm
 
+
+
 class AlphaStarAgent(object):
     """A alphastar agent for starcraft.
     Demonstrates agent interface.
@@ -27,7 +31,7 @@ class AlphaStarAgent(object):
     architecture.
     """
 
-    def __init__(self, name, initial_weights=None):
+    def __init__(self, name, initial_weights='initial'):
         # AlphaStarAgent use raw actions
         self.name = name
         self.reward = 0
@@ -48,12 +52,19 @@ class AlphaStarAgent(object):
     def get_weights(self):
         #assert self.weights == self.agent_nn.get_weights()
         return self.weights
+    
+    def get_steps(self):
+        return self.steps
+
+    def set_steps(self, steps):
+        self.steps = steps
 
 #Payoff
 class Payoff:
 
     def __init__(self):
         self._players = []
+        self._players_by_id = {}
         self._wins = collections.defaultdict(lambda: 0)
         self._draws = collections.defaultdict(lambda: 0)
         self._losses = collections.defaultdict(lambda: 0)
@@ -100,9 +111,39 @@ class Payoff:
 
     def add_player(self, player):
         self._players.append(player)
+        self._players_by_id[player.name] = player
 
     def get_players_num(self):
         return len(self._players)
+
+    def get_players_by_id(self, name):
+        return self._players_by_id[name]
+
+    def print_stats(self, name):
+        player = name
+        if isinstance(name, str):
+            player = self.get_players_by_id(name)
+        print("############################### League Historic ##################################")
+        print(f"################################ {player.name} ###################################")
+        
+        header = ["vs","win_rate", "games","wins","losses", "draws"]
+        data = [header]
+        for opponent in self._players:
+            data.append([
+                opponent.name,
+                self._win_rate(player,opponent),
+                self._games[player,opponent],
+                self._wins[player,opponent],
+                self._losses[player,opponent],
+                self._draws[player,opponent]
+            ])
+        s = [[str(e) for e in row] for row in data]
+        lens = [max(map(len, col)) for col in zip(*s)]
+        fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
+        table = [fmt.format(*row) for row in s]
+        print('\n'.join(table))
+        print("##############################################################################")
+
 
     @property
     def players(self):
@@ -133,15 +174,11 @@ class Player(object):
 
     def _create_checkpoint(self):
         # AlphaStar： return Historical(self, self.payoff)
-        return Historical(self.agent, self._payoff)
+        return Historical(self, self._payoff)
 
     @property
     def payoff(self):
         return self._payoff
-
-    @property
-    def race(self):
-        return self._race
 
     def checkpoint(self):
         raise NotImplementedError
@@ -157,11 +194,11 @@ class Historical(Player):
 
     def __init__(self, agent, payoff):
         # AlphaStar： self._agent = Agent(agent.race, agent.get_weights())
-        self.agent = AlphaStarAgent(name="Historical", initial_weights=agent.get_weights())
+        self.agent = AlphaStarAgent(name=f"{agent.agent.name}_{agent.agent.get_steps()}", initial_weights=agent.agent.get_weights())
         self._payoff = payoff
-        self._race = agent.race
         self._parent = agent
-        self.name = "Historical"
+        self.name = f"{agent.agent.name}_{agent.agent.get_steps()}"
+        self.type = "Historical"
         self._actors = []
 
     @property
@@ -177,14 +214,14 @@ class Historical(Player):
 
 class MainPlayer(Player):
 
-    def __init__(self, agent, payoff):
-        self.agent = AlphaStarAgent(name="MainPlayer", initial_weights=agent.get_weights())
+    def __init__(self, name, agent, payoff):
+        self.agent = AlphaStarAgent(name=name, initial_weights=agent.get_weights())
         # actually the _payoff maintains all the players and their fight results
         # maybe this should be the league, making it more reasonable
         self._payoff = payoff
-        self._race = agent.race
         self._checkpoint_step = 0
-        self.name = "MainPlayer"
+        self.name = name
+        self.type = "MainPlayer"
         self._actors = []
 
     def _pfsp_branch(self):
@@ -236,7 +273,8 @@ class MainPlayer(Player):
         win_rates = self._payoff[self, historical]
 
         def remove_monotonic_suffix(win_rates, players):
-            if not win_rates:
+            #if not win_rates:
+            if win_rates.size == 0:
                 return win_rates, players
 
             for i in range(len(win_rates) - 1, 0, -1):
@@ -275,7 +313,7 @@ class MainPlayer(Player):
 
     def ready_to_checkpoint(self):
         steps_passed = self.agent.get_steps() - self._checkpoint_step
-        if steps_passed < 2e9:
+        if steps_passed < STEPS_UNTIL_CHECKPOINT:
             return False
 
         historical = [
@@ -283,7 +321,7 @@ class MainPlayer(Player):
             if isinstance(player, Historical)
         ]
         win_rates = self._payoff[self, historical]
-        return win_rates.min() > 0.7 or steps_passed > 4e9
+        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2
 
     def checkpoint(self):
         self._checkpoint_step = self.agent.get_steps()
@@ -292,13 +330,13 @@ class MainPlayer(Player):
 
 class MainExploiter(Player):
 
-    def __init__(self, race, agent, payoff):
-        self.agent = AlphaStarAgent(name="MainExploiter", race=race, initial_weights=agent.get_weights())
+    def __init__(self, name, agent, payoff):
+        self.agent = AlphaStarAgent(name=name, initial_weights=agent.get_weights())
         self._initial_weights = agent.get_weights()
         self._payoff = payoff
-        self._race = agent.race
         self._checkpoint_step = 0
-        self.name = "MainExploiter"
+        self.name = name
+        self.type = "MainExploiter"
         self._actors = []
 
     def get_match(self):
@@ -321,13 +359,13 @@ class MainExploiter(Player):
             historical, p=pfsp(win_rates, weighting="variance")), True
 
     def checkpoint(self):
-        self.agent.set_weights(self._initial_weights)
+        self.agent.set_weights('inital')
         self._checkpoint_step = self.agent.get_steps()
         return self._create_checkpoint()
 
     def ready_to_checkpoint(self):
         steps_passed = self.agent.get_steps() - self._checkpoint_step
-        if steps_passed < 2e9:
+        if steps_passed < STEPS_UNTIL_CHECKPOINT*5:
             return False
 
         main_agents = [
@@ -335,18 +373,18 @@ class MainExploiter(Player):
             if isinstance(player, MainPlayer)
         ]
         win_rates = self._payoff[self, main_agents]
-        return win_rates.min() > 0.7 or steps_passed > 4e9
+        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2*5
 
 
 class LeagueExploiter(Player):
 
-    def __init__(self, race, agent, payoff):
-        self.agent = AlphaStarAgent(name="LeagueExploiter", race=race, initial_weights=agent.get_weights())
+    def __init__(self, name, agent, payoff):
+        self.agent = AlphaStarAgent(name=name, initial_weights=agent.get_weights())
         self._initial_weights = agent.get_weights()
         self._payoff = payoff
-        self._race = agent.race
         self._checkpoint_step = 0
-        self.name = "LeagueExploiter"
+        self.name = name
+        self.type = "LeagueExploiter"
         self._actors = []
 
     def get_match(self):
@@ -361,20 +399,20 @@ class LeagueExploiter(Player):
 
     def checkpoint(self):
         if np.random.random() < 0.25:
-            self.agent.set_weights(self._initial_weights)
+            self.agent.set_weights('initial')
         self._checkpoint_step = self.agent.get_steps()
         return self._create_checkpoint()
 
     def ready_to_checkpoint(self):
-        steps_passed = self._agent.get_steps() - self._checkpoint_step
-        if steps_passed < 2e9:
+        steps_passed = self.agent.get_steps() - self._checkpoint_step
+        if steps_passed < STEPS_UNTIL_CHECKPOINT*5:
             return False
         historical = [
             player for player in self._payoff.players
             if isinstance(player, Historical)
         ]
         win_rates = self._payoff[self, historical]
-        return win_rates.min() > 0.7 or steps_passed > 4e9
+        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2*5
 
 
 #https://github.com/liuruoze/mini-AlphaStar/blob/8c18233cf6e68abb581292c36f4059d7d950fc69/alphastarmini/core/ma/league.py
@@ -388,21 +426,25 @@ class League(object):
         self._payoff = Payoff()
         self._learning_players = []
 
-        for race in initial_agents:
-            for _ in range(main_players):
-                main_player = MainPlayer(race, initial_agents[race], self._payoff)
-                self._learning_players.append(main_player)
+        for i in range(main_players):
+            main_player = MainPlayer(f"main_agent_{i}", initial_agents[0], self._payoff)
+            self._learning_players.append(main_player)
+            # add Historcal (snapshot) player
+            self._payoff.add_player(main_player.checkpoint())
 
-                # add Historcal (snapshot) player
-                self._payoff.add_player(main_player.checkpoint())
+        for i in range(main_exploiters):
+            self._learning_players.append(
+                MainExploiter(f"main_exploiter_agent_{i}", initial_agents[0], self._payoff))
 
-            for _ in range(main_exploiters):
-                self._learning_players.append(
-                    MainExploiter(race, initial_agents[race], self._payoff))
+        for i in range(league_exploiters):
+            self._learning_players.append(
+                LeagueExploiter(f"league_exploiter_agent_{i}", initial_agents[0], self._payoff))
 
-            for _ in range(league_exploiters):
-                self._learning_players.append(
-                    LeagueExploiter(race, initial_agents[race], self._payoff))
+        for historical_agent in initial_agents[main_players:]:
+            player = MainPlayer(historical_agent.name, historical_agent, self._payoff)
+            player.agent.set_steps(historical_agent.get_steps())
+            player._checkpoint_step = historical_agent.get_steps()
+            self._payoff.add_player(Historical(player, self._payoff))
 
         # add MP, ME, LE player
         for player in self._learning_players:
@@ -416,6 +458,23 @@ class League(object):
     def get_learning_player(self, idx):
         return self._learning_players[idx]
 
+    def get_learning_players(self):
+        return self._learning_players
+
+    def get_learning_players_by_type(self, type):
+        players = []
+        cls_type = "MainPlayer"
+        if type == 'exploiter':
+            cls_type = "MainExploiter"
+        elif type == 'league_exploiter':
+            cls_type = "LeagueExploiter"
+        
+        for player in self._learning_players:
+            if player.type == cls_type:
+                players.append(player)
+        
+        return players
+
     def add_player(self, player):
         self._payoff.add_player(player)
 
@@ -424,3 +483,9 @@ class League(object):
 
     def get_players_num(self):
         return self._payoff.get_players_num()
+
+    def get_player_by_id(self, name) -> Player:
+        return self._payoff.get_players_by_id(name)
+
+    def print_league_stats(self):
+        self._payoff.print_stats(self._learning_players[0])

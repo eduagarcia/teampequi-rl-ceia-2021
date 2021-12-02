@@ -22,7 +22,7 @@ class RayAgent(AgentInterface):
     RayAgent is an agent that uses ray to train a model.
     """
 
-    def __init__(self, env: gym.Env, checkpoint='latest'):
+    def __init__(self, env: gym.Env, checkpoint='default'):
         """Initialize the RayAgent.
         Args:
             env: the competition environment.
@@ -31,7 +31,10 @@ class RayAgent(AgentInterface):
         ray.init(ignore_reinit_error=True)
 
         checkpoints = self._get_checkpoints()
-        if checkpoint == 'latest':
+
+        if checkpoint == 'default':
+            checkpoint_path = CHECKPOINT_PATH
+        elif checkpoint == 'latest':
             checkpoint_path = checkpoints[max(list(checkpoints.keys()))]
         else:
             checkpoint_path = checkpoints[int(checkpoint)]

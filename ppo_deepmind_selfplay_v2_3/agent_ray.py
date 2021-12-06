@@ -28,6 +28,7 @@ class RayAgent(AgentInterface):
             env: the competition environment.
         """
         super().__init__()
+        self.name = "RewardCagada"
         ray.init(ignore_reinit_error=True)
 
         checkpoints = self._get_checkpoints()

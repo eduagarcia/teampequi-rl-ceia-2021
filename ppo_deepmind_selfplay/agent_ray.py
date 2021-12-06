@@ -87,6 +87,7 @@ class RayAgent(AgentInterface):
             env: the competition environment.
         """
         super().__init__()
+        self.name = "GoiabaFinalForm"
         ray.init(ignore_reinit_error=True)
 
         config = default_config.copy()

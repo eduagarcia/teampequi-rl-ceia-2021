@@ -11,27 +11,6 @@ class RLLibWrapper(gym.core.Wrapper, MultiAgentEnv):
     pass
 
 
-def create_custom_reward_rllib_env(env_config: dict = {}):
-    """
-    Creates a RLLib environment and prepares it to be instantiated by Ray workers.
-    Args:
-        env_config: configuration for the environment.
-            You may specify the following keys:
-            - variation: one of soccer_twos.EnvType. Defaults to EnvType.multiagent_player.
-            - opponent_policy: a Callable for your agent to train against. Defaults to a random policy.
-    """
-    if hasattr(env_config, "worker_index"):
-        env_config["worker_id"] = (
-            env_config.worker_index * env_config.get("num_envs_per_worker", 1)
-            + env_config.vector_index
-        )
-    env = CustomRewardWrapper(soccer_twos.make(**env_config))
-    if "multiagent" in env_config and not env_config["multiagent"]:
-        # is multiagent by default, is only disabled if explicitly set to False
-        return env
-    return RLLibWrapper(env)
-
-
 def create_rllib_env(env_config: dict = {}):
     """
     Creates a RLLib environment and prepares it to be instantiated by Ray workers.
@@ -52,10 +31,21 @@ def create_rllib_env(env_config: dict = {}):
         return env
     return RLLibWrapper(env)
 
-def create_grouped_rllib_env(env_config: dict = {}):
-    env = create_rllib_env(env_config=env_config)
-    env = env.with_agent_groups({
-        'blue_team': [0, 1],
-        'yellow_team': [2, 3]
-    })
-    return env
+def create_wrapped_rllib_env(wrappers: list = []):
+    def f(env_config: dict = {}):
+        if hasattr(env_config, "worker_index"):
+            env_config["worker_id"] = (
+                env_config.worker_index * env_config.get("num_envs_per_worker", 1)
+                + env_config.vector_index
+            )
+        env = soccer_twos.make(**env_config)
+        if "multiagent" in env_config and not env_config["multiagent"]:
+            # is multiagent by default, is only disabled if explicitly set to False
+            return env
+        for wrapper in wrappers:
+            env = wrapper(env)
+        return RLLibWrapper(env)
+    return f
+
+def create_custom_reward_rllib_env(env_config: dict = {}):
+    return create_wrapped_rllib_env(wrapper_list=[CustomRewardWrapper])(env_config=env_config)

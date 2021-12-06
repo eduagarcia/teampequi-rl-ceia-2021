@@ -8,7 +8,8 @@ import traceback
 
 import soccer_twos
 from soccer_twos.agent_interface import AgentInterface
-from custom_reward import CustomRewardWrapper
+from custom_reward import CustomRewardWrapper, ColisionRewardWrapper, BallBehindPenaltyWrapper
+from wrappers import RandomEnvWrapper
 
 
 def get_agent_class(module):
@@ -81,15 +82,22 @@ if __name__ == "__main__":
         #logging.info(f"{agent2_module_name} name is {agent2.name}")
         env = soccer_twos.make(
             watch=True,
+            #render=True,
+            #time_scale=0.1,
             base_port=args.base_port,
-            #blue_team_name=agent1.name,
-            #orange_team_name=agent2.name,
+            blue_team_name=agent1.name,
+            orange_team_name=agent2.name,
         )
-        env = CustomRewardWrapper(env)
+        #env = CustomRewardWrapper(env)
+        #env = RandomEnvWrapper(env)
+        #env = BallBehindPenaltyWrapper(env)
+        #env = ColisionRewardWrapper(env)
         obs = env.reset()
         team0_reward = 0
         team1_reward = 0
+        count = 0
         while True:
+            
             # use agent1 as controller for team 0 and vice versa
             agent1_actions = agent1.act({0: obs[0], 1: obs[1]})
             agent2_actions = agent2.act({0: obs[2], 1: obs[3]})
@@ -101,7 +109,19 @@ if __name__ == "__main__":
             }
 
             # step
-            obs, reward, done, info = env.step(actions)
+            if count == 0:
+                import numpy as np
+                zero = np.asarray([0,0,0])
+                obs, reward, done, info = env.step({
+                    0: zero,
+                    1: zero,
+                    2: zero,
+                    3: zero,
+                })
+                #print(info)
+            else:
+                obs, reward, done, info = env.step(actions)
+            count += 1
 
             # logging
             team0_reward += reward[0] + reward[1]
@@ -110,6 +130,7 @@ if __name__ == "__main__":
                 logging.info(f"Total Reward: {team0_reward} x {team1_reward}")
                 team0_reward = 0
                 team1_reward = 0
+                count = 0
                 env.reset()
     except (Exception, KeyboardInterrupt) as e:
         if env is not None:

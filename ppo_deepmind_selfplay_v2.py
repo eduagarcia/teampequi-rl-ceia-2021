@@ -76,6 +76,8 @@ if __name__ == "__main__":
     act_space = temp_env.action_space
     temp_env.close()
 
+    
+
     analysis = tune.run(
         "PPO",
         name="PPO_deepmind_selfplay_v2",

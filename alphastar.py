@@ -3,7 +3,8 @@
 import numpy as np
 import collections
 
-STEPS_UNTIL_CHECKPOINT = 100
+STEPS_UNTIL_CHECKPOINT = 5000
+MULTIPLIER_EXPLOITER = 3
 
 
 # The code for the algorithm of pfsp, priority fictitious self-play
@@ -72,7 +73,8 @@ class Payoff:
         self._decay = 0.99
 
     def _win_rate(self, _home, _away):
-        if self._games[_home, _away] == 0:
+        #if self._games[_home, _away] == 0:
+        if self._games[_home, _away] <= 20:
             return 0.5
 
         return (self._wins[_home, _away]
@@ -152,6 +154,11 @@ class Payoff:
 #https://github.com/liuruoze/mini-AlphaStar/blob/8c18233cf6e68abb581292c36f4059d7d950fc69/alphastarmini/core/ma/player.py
 
 class Player(object):
+    def __init__(self):
+        self.metadata = {
+            'last_field_side': 0
+        }
+
     @property
     def learner(self):
         return self._learner
@@ -189,10 +196,10 @@ class Player(object):
     def reset(self):
         self.agent.reset()
 
-
 class Historical(Player):
 
     def __init__(self, agent, payoff):
+        super().__init__()
         # AlphaStar： self._agent = Agent(agent.race, agent.get_weights())
         self.agent = AlphaStarAgent(name=f"{agent.agent.name}_{agent.agent.get_steps()}", initial_weights=agent.agent.get_weights())
         self._payoff = payoff
@@ -215,6 +222,7 @@ class Historical(Player):
 class MainPlayer(Player):
 
     def __init__(self, name, agent, payoff):
+        super().__init__()
         self.agent = AlphaStarAgent(name=name, initial_weights=agent.get_weights())
         # actually the _payoff maintains all the players and their fight results
         # maybe this should be the league, making it more reasonable
@@ -331,6 +339,7 @@ class MainPlayer(Player):
 class MainExploiter(Player):
 
     def __init__(self, name, agent, payoff):
+        super().__init__()
         self.agent = AlphaStarAgent(name=name, initial_weights=agent.get_weights())
         self._initial_weights = agent.get_weights()
         self._payoff = payoff
@@ -365,7 +374,7 @@ class MainExploiter(Player):
 
     def ready_to_checkpoint(self):
         steps_passed = self.agent.get_steps() - self._checkpoint_step
-        if steps_passed < STEPS_UNTIL_CHECKPOINT*5:
+        if steps_passed < STEPS_UNTIL_CHECKPOINT*MULTIPLIER_EXPLOITER:
             return False
 
         main_agents = [
@@ -373,12 +382,13 @@ class MainExploiter(Player):
             if isinstance(player, MainPlayer)
         ]
         win_rates = self._payoff[self, main_agents]
-        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2*5
+        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2*MULTIPLIER_EXPLOITER
 
 
 class LeagueExploiter(Player):
 
     def __init__(self, name, agent, payoff):
+        super().__init__()
         self.agent = AlphaStarAgent(name=name, initial_weights=agent.get_weights())
         self._initial_weights = agent.get_weights()
         self._payoff = payoff
@@ -405,14 +415,14 @@ class LeagueExploiter(Player):
 
     def ready_to_checkpoint(self):
         steps_passed = self.agent.get_steps() - self._checkpoint_step
-        if steps_passed < STEPS_UNTIL_CHECKPOINT*5:
+        if steps_passed < STEPS_UNTIL_CHECKPOINT*MULTIPLIER_EXPLOITER:
             return False
         historical = [
             player for player in self._payoff.players
             if isinstance(player, Historical)
         ]
         win_rates = self._payoff[self, historical]
-        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2*5
+        return win_rates.min() > 0.7 or steps_passed > STEPS_UNTIL_CHECKPOINT*2*MULTIPLIER_EXPLOITER
 
 
 #https://github.com/liuruoze/mini-AlphaStar/blob/8c18233cf6e68abb581292c36f4059d7d950fc69/alphastarmini/core/ma/league.py

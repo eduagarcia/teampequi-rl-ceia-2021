@@ -16,6 +16,8 @@ class RandomAgent(AgentInterface):
             env: the competition environment.
         """
         super().__init__()
+        self.name = "RANDOM"
+
 
         self.action_space = env.action_space
 

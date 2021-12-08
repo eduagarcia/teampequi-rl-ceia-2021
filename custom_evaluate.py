@@ -39,7 +39,8 @@ def evaluate(
     agent1_checkpoint: str = 'default',
     agent2_checkpoint: str = 'default',
     n_episodes: int = 200,
-    base_port = None
+    base_port = 50039,
+    worker_id = 0
 ) -> Dict:
     """Evaluates two agents against each other"""
 
@@ -48,11 +49,11 @@ def evaluate(
     else:
         agent2_module_name = agent2_module_name
 
-    agent1 = load_agent(agent1_module_name, base_port=base_port)
-    agent2 = load_agent(agent2_module_name, base_port=base_port)
+    agent1 = load_agent(agent1_module_name, agent1_checkpoint, base_port=base_port)
+    agent2 = load_agent(agent2_module_name, agent2_checkpoint, base_port=base_port)
 
     env = soccer_twos.make(
-        base_port=base_port,
+        base_port=base_port, worker_id=worker_id
     )
     
     episodes_data = collect_episodes(env, agent1, agent2, n_episodes)
@@ -108,6 +109,12 @@ if __name__ == "__main__":
     logging.info(f"Number of Episodes to Evaluate {args.episodes}")
     logging.info(f"Base Communication Port {args.base_port}")
 
-    result = evaluate(agent1_module_name, agent2_module_name, checkpoint_1, checkpoint_2, args.episodes, args.base_port)
+    result = evaluate(
+        agent1_module_name,
+        agent2_module_name,
+        checkpoint_1,
+        checkpoint_2,
+        args.episodes,
+        args.base_port)
 
     print(pretty_print(result))

@@ -43,6 +43,12 @@ RESTORE_PATH = None
 #restore = True
 #RESTORE_PATH = 'ray_results/PPO_deepmind_selfplay_v3/PPO_Soccer_b5b30_00000_0_2021-12-05_10-53-22/checkpoint_000600/checkpoint-600'
 
+#Starter checkpoint
+INITIAL_WEIGHTS = None
+#INITIAL_WEIGHTS = './ray_results/PPO_deepmind_selfplay_v2_1/PPO_Soccer_8853e_00000_0_2021-11-29_12-10-48/selfplay_checkpoints/1805.pkl'
+#dir_path = os.path.dirname(os.path.realpath(__file__))
+#INITIAL_WEIGHTS = os.path.join(dir_path, INITIAL_WEIGHTS)
+
 class RandomPolicy(Policy):
     """Hand-coded policy that returns random actions."""
     def __init__(self, *args, **kwargs):
@@ -186,7 +192,7 @@ class Coordinator:
                 opponent = self._pfsp_branch()
             # 15% Random of league
             elif seed < 0.85:
-                np.random.choice(self.league)
+                opponent = np.random.choice(self.league)
             # 15% Harder player in the League
             else:
                 win_rates = np.asarray([1 - self.get_win_rate(player) for player in self.league])
@@ -243,6 +249,9 @@ class Coordinator:
     def save_state(self, logdir):
         with open(os.path.join(logdir, 'selfplay_checkpoints', 'state'), 'wb') as f:
             pickle.dump(self.state, f)
+
+    def add_to_league(self, policy_id):
+        self.league.append(policy_id)
 
     def reset_win_rate(self):
         for policy_id in self.trainable_policies:
@@ -306,6 +315,7 @@ class PrioritizedSelfPlay(DefaultCallbacks):
         self.save_period = 50
         self.task_id = 0
         self.stage = 0
+        self.start_config = True
 
     def _save_weights(self, trainer, policy_id):
         checkpoint_dir = os.path.join(trainer.logdir, 'selfplay_checkpoints')
@@ -408,6 +418,20 @@ class PrioritizedSelfPlay(DefaultCallbacks):
             # remote workers as well.
             trainer.workers.sync_weights(policies=[new_policy_id])
 
+        if self.start_config:
+            if INITIAL_WEIGHTS is not None and os.path.exists(INITIAL_WEIGHTS):
+                with open(INITIAL_WEIGHTS, 'rb') as f:
+                    print('Loading initial weights', INITIAL_WEIGHTS)
+                    initial_weights = pickle.load(f)
+                    pol_map = trainer.workers.local_worker().policy_map
+                    pol_map['main_agent_striker'].set_weights(initial_weights)
+                    trainer.workers.sync_weights(policies=['main_agent_striker'])
+                    _sync_weights('main_agent_striker', 'main_agent_goalie')
+                    _create_checkpoint('main_agent_striker', 'main_agent_0_striker')
+                    _create_checkpoint('main_agent_goalie', 'main_agent_0_goalie')
+                    coordinator.add_to_league.remote('main_agent_0')
+            self.start_config = False
+
         for policy_id in self.trainable_policies:
             for t in ['_striker', '_goalie']:
                 _sync_weights(policy_id+t, policy_id+'_sync'+t)
@@ -427,6 +451,7 @@ class PrioritizedSelfPlay(DefaultCallbacks):
         result['win_rates'] = {}
         for policy_id in self.trainable_policies:
             win_rate = ray.get(coordinator.get_win_rate.remote(policy_id))
+            win_rates.append(win_rate)
             result['win_rates'][policy_id] = win_rate
         
         print('Current Task:', str(self.task_id), 'Stage:', 'initial' if self.stage == 0 else 'league')
@@ -465,8 +490,8 @@ if __name__ == "__main__":
             #BallInTeamFieldSidePenaltyWrapper,
             #BallBehindPenaltyWrapper,
             #ColisionRewardWrapper,
-            SingleObsWrapper,
-            MultiagentTeamObsWrapper,
+            #SingleObsWrapper,
+            #MultiagentTeamObsWrapper,
             CurriculumWrapper
             ]
     )

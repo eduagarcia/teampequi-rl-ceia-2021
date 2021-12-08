@@ -3,7 +3,7 @@
 import numpy as np
 import collections
 
-STEPS_UNTIL_CHECKPOINT = 5000
+STEPS_UNTIL_CHECKPOINT = 3000
 MULTIPLIER_EXPLOITER = 3
 
 
@@ -40,6 +40,10 @@ class AlphaStarAgent(object):
         self.steps = 0
         self.obs_spec = None
         self.action_spec = None
+        self.model_definitions = {
+            "fcnet_hiddens": [512, 512],
+            "vf_share_layers": False
+        }
 
         self.weights = initial_weights
 

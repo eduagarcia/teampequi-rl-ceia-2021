@@ -75,12 +75,12 @@ def collect_episodes(
         
         while not episode_done:
             blue_team_actions = team_order[0].act({0: obs[0], 1: obs[1]})
-            orange_team_actions = team_order[1].act({0: obs[2], 1: obs[3]})
+            orange_team_actions = team_order[1].act({0: obs[3], 1: obs[2]})
             actions = {
                 0: blue_team_actions[0],
                 1: blue_team_actions[1],
-                2: orange_team_actions[0],
-                3: orange_team_actions[1],
+                2: orange_team_actions[1],
+                3: orange_team_actions[0],
             }
 
             # step

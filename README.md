@@ -1,6 +1,20 @@
-# CEIA RL Course Tournament Starter Kit
+# Pequi - Reinforcement Learning Competition - CEIA 2021 (1º Place)
 
-Example training/testing scripts for our [Soccer-Twos](https://github.com/bryanoliveira/soccer-twos-env) environment.
+Members:  
+![@eduagarcia](https://github.com/eduagarcia)  
+![@thiagohenrique1](https://github.com/thiagohenrique1)  
+![@Werikcyano](https://github.com/Werikcyano)  
+
+Competition Envoriment: https://github.com/bryanoliveira/soccer-twos-env  
+Starter Code: https://github.com/dlb-rl/rl-tournament-starter  
+Solution Presentation (Portuguese): https://youtu.be/8C91NqZV4yk?t=7456  
+Solution Presentation Slides: https://docs.google.com/presentation/d/1X9TG1GYlHuVzvuVGsUv8bPfMYdgxGImLq0JfLakHxwc/edit?usp=sharing  
+
+## Solutions:
+
+Goiaba: ![ppo_deepmind_selfplay.py](ppo_deepmind_selfplay.py) (0.47 Win-Rate vs Baseline)  
+GoiabaV2: ![ppo_deepmind_selfplay_v2_1.py](ppo_deepmind_selfplay_v2_1.py) (0.6 Win-Rate vs Baseline)  
+Goiabão: ![ppo_deepmind_selfplay_v4.py](ppo_deepmind_selfplay_v4.py) (0.81 Win-Rate vs Baseline)  
 
 ## Requirements
 

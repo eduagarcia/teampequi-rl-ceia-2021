@@ -38,7 +38,7 @@ if __name__ == "__main__":
         },
         stop={
             #"timesteps_total": 18000,  # 20M
-             "time_total_s": 28800, # 4h
+             "time_total_s": 86400, # 24h
         },
         checkpoint_freq=100,
         checkpoint_at_end=True,

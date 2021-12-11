@@ -14,10 +14,10 @@ from soccer_twos import AgentInterface
 
 
 ALGORITHM = "SAC"
-CHECKPOINT_PATH = "./SAC_Soccer_a5d4c_00000_0_2021-12-06_00-00-20/checkpoint_020461/checkpoint-20461"
+CHECKPOINT_PATH = "ray_results/checkpoint_003000/checkpoint-3000"
 dir_path = os.path.dirname(os.path.realpath(__file__))
 CHECKPOINT_PATH = os.path.join(dir_path, CHECKPOINT_PATH)
-POLICY_NAME = "SAC_2"  # this may be useful when training with selfplay
+POLICY_NAME = "SAC_1"  # this may be useful when training with selfplay
 
 class RayAgent(AgentInterface):
     """

@@ -1,4 +1,4 @@
-# Pequi - Reinforcement Learning Competition - CEIA 2021 (1º Place)
+# Pequi - Reinforcement Learning Competition - CEIA 2021 (1st Place)
 
 Members:  
 ![@eduagarcia](https://github.com/eduagarcia)  
